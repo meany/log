@@ -37,3 +37,7 @@ deploy_model: pull-and-serve
 generator: 11ty
 source_of_truth: git
 ```
+
+```diff
++ made a manual change to this file to trigger a build to validate polling works
+```
