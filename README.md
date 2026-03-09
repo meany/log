@@ -3,6 +3,8 @@
 [![Build][build-badge]][build-link]
 [![Publish][publish-badge]][publish-link]
 
+**Live site: [log.meany.xyz](https://log.meany.xyz/)**
+
 A minimalist static engineering log built with 11ty, Markdown, and Docker. Git is the source of truth; static HTML is the build artifact.
 
 [build-badge]: https://github.com/meany/log/actions/workflows/build.yml/badge.svg
