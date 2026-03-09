@@ -12,7 +12,7 @@ jobs:
   push:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
@@ -48,3 +48,20 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/log:${{ steps.image-tag.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.image-tag.outputs.tag }}
+          name: Release ${{ steps.image-tag.outputs.tag }}
+          body: |
+            **Container Image**
+            ```
+            docker pull ghcr.io/${{ github.repository_owner }}/log:${{ steps.image-tag.outputs.tag }}
+            ```
+            
+            Also available as `ghcr.io/${{ github.repository_owner }}/log:latest`
+            
+            [View in Container Registry](https://github.com/${{ github.repository }}/pkgs/container/log)
+          draft: false
+          prerelease: false
