@@ -1,0 +1,16 @@
+---
+layout: base.njk
+title: root
+permalink: /
+---
+<section>
+  <p class="intro">Chronological field notes from real systems work.</p>
+  <ul class="log-list">
+    {% for entry in collections.entries %}
+      <li>
+        <time datetime="{{ entry.date | isoDate }}">{{ entry.date | readableDate }}</time>
+        <a href="{{ entry.url }}">{{ entry.data.title }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+</section>

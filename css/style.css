@@ -1,0 +1,181 @@
+:root {
+  --bg: #0b0f0d;
+  --panel: #111714;
+  --text: #d7f5e2;
+  --muted: #9dc8ad;
+  --accent: #63f5a4;
+  --border: #254233;
+  --focus: #c0ffd9;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  color: var(--text);
+  font-family: "IBM Plex Mono", "Consolas", "Menlo", "Monaco", monospace;
+  line-height: 1.65;
+  background: var(--bg);
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 0.15em;
+}
+
+a:hover {
+  color: var(--focus);
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -100%;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  z-index: 1000;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+.shell {
+  width: min(72ch, 100% - 2rem);
+  margin: 0 auto;
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--bg), black 20%);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(6px);
+}
+
+.site-header nav {
+  min-height: 3.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.brand {
+  font-weight: 700;
+  margin-right: auto;
+}
+
+main {
+  flex: 1;
+  padding: 2rem 0 1.5rem;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+}
+
+.meta,
+.intro {
+  color: var(--muted);
+}
+
+.log-list {
+  list-style: none;
+  margin: 0;
+  padding-left: 0;
+}
+
+.log-list li,
+.tag-index li {
+  border-bottom: 1px dashed var(--border);
+  padding: 0.75rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+time {
+  color: var(--muted);
+}
+
+pre,
+code {
+  font-family: inherit;
+}
+
+pre {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+img,
+svg,
+video,
+iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+.site-footer {
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  padding: 1rem 0 2rem;
+}
+
+@media (max-width: 640px) {
+  .site-header nav {
+    flex-wrap: wrap;
+    gap: 0.5rem 0.9rem;
+    padding: 0.5rem 0;
+  }
+
+  .brand {
+    width: 100%;
+    margin-right: 0;
+  }
+}
+
+@media (forced-colors: active) {
+  :root {
+    --bg: Canvas;
+    --panel: Canvas;
+    --text: CanvasText;
+    --muted: CanvasText;
+    --accent: LinkText;
+    --border: ButtonBorder;
+    --focus: Highlight;
+  }
+
+  .site-header,
+  .site-footer,
+  pre,
+  .skip-link,
+  .log-list li,
+  .tag-index li {
+    border-color: ButtonBorder;
+  }
+}

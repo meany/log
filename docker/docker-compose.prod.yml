@@ -1,0 +1,15 @@
+name: log-meany-xyz
+
+services:
+  log-site:
+    image: ghcr.io/meany/log:release
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8069:8069"
+    volumes:
+      - state-data:/state
+
+volumes:
+  state-data:

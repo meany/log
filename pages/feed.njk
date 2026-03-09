@@ -1,0 +1,25 @@
+---
+permalink: /feed.xml
+eleventyExcludeFromCollections: true
+---
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>log.meany.xyz</title>
+  <subtitle>Personal field log</subtitle>
+  <link href="https://log.meany.xyz/feed.xml" rel="self"/>
+  <link href="https://log.meany.xyz/"/>
+  <updated>{{ collections.entries[0].date | isoDate }}</updated>
+  <id>https://log.meany.xyz/</id>
+  {% for entry in collections.entries %}
+  <entry>
+    <title>{{ entry.data.title }}</title>
+    <link href="https://log.meany.xyz{{ entry.url }}"/>
+    <updated>{{ entry.date | isoDate }}</updated>
+    <id>https://log.meany.xyz{{ entry.url }}</id>
+    <summary>{{ entry.data.summary }}</summary>
+    <author>
+      <name>{{ entry.data.author }}</name>
+    </author>
+  </entry>
+  {% endfor %}
+</feed>

@@ -1,0 +1,22 @@
+---
+layout: base.njk
+---
+<article>
+  <header>
+    <h1>{{ title }}</h1>
+    <p class="meta">
+      <time datetime="{{ date | isoDate }}">{{ date | readableDate }}</time>
+      {% if tags and tags.length %}
+        <span aria-hidden="true"> | </span>
+        <span class="tag-list">
+          {% for tag in tags %}
+            {% if tag != "entries" %}
+              <a href="/tags/{{ tag | slug }}/">#{{ tag }}</a>{% if not loop.last %} {% endif %}
+            {% endif %}
+          {% endfor %}
+        </span>
+      {% endif %}
+    </p>
+  </header>
+  {{ content | safe }}
+</article>

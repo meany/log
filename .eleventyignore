@@ -1,0 +1,9 @@
+plan.md
+.github/**
+instructions/**
+docs/
+docker/
+.env*
+.gitignore
+.dockerignore
+Dockerfile

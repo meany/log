@@ -1,0 +1,23 @@
+---
+layout: base.njk
+pagination:
+  data: collections.tagList
+  size: 1
+  alias: tag
+permalink: "/tags/{{ tag | slug }}/index.html"
+eleventyComputed:
+  title: "Tag: {{ tag }}"
+---
+<section>
+  <h1>Tag: #{{ tag }}</h1>
+  <ul class="log-list">
+    {% for entry in collections.entries %}
+      {% if entry.data.tags and tag in entry.data.tags %}
+        <li>
+          <time datetime="{{ entry.date | isoDate }}">{{ entry.date | readableDate }}</time>
+          <a href="{{ entry.url }}">{{ entry.data.title }}</a>
+        </li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+</section>

@@ -1,0 +1,17 @@
+{
+  "name": "log-meany-xyz",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Minimal static log for meany.xyz",
+  "scripts": {
+    "dev": "eleventy --serve",
+    "build": "eleventy",
+    "entry": "node scripts/new-entry.js"
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "^2.0.1",
+    "@11ty/eleventy-plugin-rss": "^1.2.0",
+    "@11ty/eleventy-plugin-syntaxhighlight": "^5.0.0",
+    "luxon": "^3.5.0"
+  }
+}
