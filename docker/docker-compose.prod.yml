@@ -2,7 +2,7 @@ name: log-meany-xyz
 
 services:
   log-site:
-    image: ghcr.io/meany/log:release
+    image: ghcr.io/meany/log:latest
     restart: unless-stopped
     env_file:
       - .env
