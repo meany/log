@@ -40,5 +40,5 @@ source_of_truth: git
 
 ```diff
 + made a manual change to this file to trigger a build to validate polling works
-+ made a second change for testing.
++ made a second change for testing
 ```
