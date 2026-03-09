@@ -71,7 +71,7 @@ Both processes are managed by supervisord and log output is available via
 
 2. **Container publishes** (`publish.yml`): Triggers only on Dockerfile or docker/ changes
    - Rebuilds image with new bundled site + latest code
-   - Publishes to `ghcr.io/meany/log:latest` and `:release`
+   - Publishes to `ghcr.io/meany/log:latest`
    - **Does not** republish on content-only commits
 
 **Result:** Content updates deploy immediately via polling. The bundled Docker image may contain older posts until the next Docker-level change, but the poll-agent keeps the site current.
