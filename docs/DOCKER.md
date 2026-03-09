@@ -77,3 +77,38 @@ Both processes are managed by supervisord and log output is available via
 **Result:** Content updates deploy immediately via polling. The bundled Docker image may contain older posts until the next Docker-level change, but the poll-agent keeps the site current.
 
 **Versioning:** Images use git commit history as the version source of truth (no manual semantic versions). Both tags point to the latest build.
+
+## Poll Agent Local Troubleshooting
+
+Use these checks when the container logs show `403` or artifact download failures.
+
+1. Validate `docker/.env` values:
+    - `GITHUB_OWNER=meany`
+    - `GITHUB_REPO=log`
+    - `WORKFLOW_FILE=build.yml`
+    - `BRANCH=main`
+    - `ARTIFACT_NAME=site`
+
+2. Verify token scope for this repo:
+    - Fine-grained PAT must include repository access to `meany/log`
+    - Permission required: `Actions: Read`
+
+3. Run poll-agent once with API debug output:
+
+```bash
+docker compose -f docker/docker-compose.prod.yml run --rm \
+   -e RUN_ONCE=true \
+   -e DEBUG_API=true \
+   log-site /app/poll-and-deploy.sh
+```
+
+4. If you still see `403`, confirm with direct API call from the host:
+
+```bash
+curl -i \
+   -H "Accept: application/vnd.github+json" \
+   -H "Authorization: Bearer $GITHUB_TOKEN" \
+   "https://api.github.com/repos/meany/log/actions/workflows/build.yml/runs?branch=main&status=success&per_page=1"
+```
+
+If response headers include `x-accepted-github-permissions: actions=read`, the token is missing required `Actions: Read` access or is not authorized for the repository.

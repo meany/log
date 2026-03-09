@@ -9,6 +9,8 @@ WORKFLOW_FILE="${WORKFLOW_FILE:-build.yml}"
 ARTIFACT_NAME="${ARTIFACT_NAME:-site}"
 POLL_INTERVAL_SECONDS="${POLL_INTERVAL_SECONDS:-120}"
 BRANCH="${BRANCH:-main}"
+RUN_ONCE="${RUN_ONCE:-false}"
+DEBUG_API="${DEBUG_API:-false}"
 
 require_env() {
   name="$1"
@@ -33,10 +35,25 @@ LAST_RUN_FILE="$STATE_DIR/last_run_id"
 
 api_get() {
   url="$1"
-  curl -fsSL \
+  tmp_body="$WORK_DIR/api-body.json"
+
+  http_code="$(curl -sSL -o "$tmp_body" -w "%{http_code}" \
     -H "Accept: application/vnd.github+json" \
     -H "Authorization: Bearer $GITHUB_TOKEN" \
-    "$url"
+    "$url")"
+
+  if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+    echo "GitHub API request failed: status=$http_code url=$url" >&2
+    echo "Expected token permission: actions=read" >&2
+
+    if [ "$DEBUG_API" = "true" ] && [ -s "$tmp_body" ]; then
+      echo "API response body:" >&2
+      cat "$tmp_body" >&2
+    fi
+    return 1
+  fi
+
+  cat "$tmp_body"
 }
 
 deploy_latest() {
@@ -100,5 +117,11 @@ while true; do
       echo "Deploy attempt failed; retrying in $POLL_INTERVAL_SECONDS seconds" >&2
     fi
   fi
+
+  if [ "$RUN_ONCE" = "true" ]; then
+    echo "RUN_ONCE=true set; exiting after one deploy check."
+    exit 0
+  fi
+
   sleep "$POLL_INTERVAL_SECONDS"
 done
