@@ -12,7 +12,7 @@ jobs:
   push:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
@@ -29,7 +29,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Generate image tag
+        id: image-tag
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          echo "tag=${BRANCH}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+
       - name: Build and push
+        id: docker
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -37,6 +45,21 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/log:latest
-            ghcr.io/${{ github.repository_owner }}/log:release
+            ghcr.io/${{ github.repository_owner }}/log:${{ steps.image-tag.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: release-${{ steps.image-tag.outputs.tag }}
+          body: |
+            **Container Image**
+            ```
+            ghcr.io/${{ github.repository_owner }}/log:${{ steps.image-tag.outputs.tag }}
+            ```
+
+            **Registry Link**
+            [https://github.com/${{ github.repository }}/pkgs/container/log](https://github.com/${{ github.repository }}/pkgs/container/log)
+          draft: false
+          prerelease: false

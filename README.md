@@ -1,6 +1,14 @@
 # log.meany.xyz
 
+[![Build][build-badge]][build-link]
+[![Publish][publish-badge]][publish-link]
+
 A minimalist static engineering log built with 11ty, Markdown, and Docker. Git is the source of truth; static HTML is the build artifact.
+
+[build-badge]: https://github.com/meany/log/actions/workflows/build.yml/badge.svg
+[build-link]: https://github.com/meany/log/actions/workflows/build.yml
+[publish-badge]: https://github.com/meany/log/actions/workflows/publish.yml/badge.svg
+[publish-link]: https://github.com/meany/log/actions/workflows/publish.yml
 
 ## Structure
 
