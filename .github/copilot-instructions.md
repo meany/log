@@ -34,3 +34,4 @@ Refer to `plan.md` for architecture decisions and open design items.
 - ❌ Hard-coded values
 - ❌ Renaming files, public APIs, or shared symbols unless explicitly requested
 - ❌ Committing sensitive data — use `.gitignore` and GitHub Actions secrets
+- ❌ Run the build if just making new entries
