@@ -1,0 +1,28 @@
+---
+layout: base.njk
+title: Page not found
+description: The page could not be found. Browse the latest engineering log entries, tags, or the Atom feed.
+keywords: 404, not found, engineering log, tags, Atom feed
+permalink: /404.html
+eleventyExcludeFromCollections: true
+---
+<section>
+  <h1>Page not found</h1>
+  <p class="intro">That URL does not exist here. Start from the latest entries, browse tags, or use the feed.</p>
+  <ul class="log-list">
+    <li><a href="/">Latest entries</a></li>
+    <li><a href="/tags/">Browse tags</a></li>
+    <li><a href="/feed.xml">Atom feed</a></li>
+  </ul>
+  <h2>Recent entries</h2>
+  <ul class="log-list">
+    {% for entry in collections.entries %}
+      {% if loop.index <= 5 %}
+        <li>
+          <time datetime="{{ entry.date | isoDate }}">{{ entry.date | readableDate }}</time>
+          <a href="{{ entry.url }}">{{ entry.data.title }}</a>
+        </li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+</section>

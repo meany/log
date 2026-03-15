@@ -7,7 +7,9 @@
     {% set canonicalUrl = siteUrl + pagePath %}
     {% set pageTitle = title if title and title != siteName else siteName %}
     {% set pageDescription = description or summary or "Field notes from real systems work: migration, policy, operations, and static engineering logs." %}
+    {% set pageKeywords = keywords or "engineering log, Azure, GitHub Actions, policy, Docker, web operations, static site" %}
     {% set ogImagePath = (og_image or featured_image) | socialImagePath %}
+    {% set ogImageType = ogImagePath | socialImageType %}
     {% if ogImagePath[0] == "/" %}
       {% set ogImageUrl = siteUrl + ogImagePath %}
     {% else %}
@@ -19,8 +21,10 @@
     <title>{% if title and title != siteName %}{{ title }} | {% endif %}{{ siteName }}</title>
 
     <meta name="description" content="{{ pageDescription }}">
+  <meta name="keywords" content="{{ pageKeywords }}">
     <link rel="canonical" href="{{ canonicalUrl }}">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml">
+  <link rel="shortcut icon" href="/favicon.svg" type="image/svg+xml">
 
     <meta property="og:type" content="{% if pagePath and '/entries/' in pagePath %}article{% else %}website{% endif %}">
     <meta property="og:site_name" content="{{ siteName }}">
@@ -29,7 +33,7 @@
     <meta property="og:url" content="{{ canonicalUrl }}">
     <meta property="og:image" content="{{ ogImageUrl }}">
     <meta property="og:image:alt" content="{{ pageTitle }}">
-    <meta property="og:image:type" content="image/svg+xml">
+  <meta property="og:image:type" content="{{ ogImageType }}">
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ pageTitle }}">
@@ -54,7 +58,8 @@
     </script>
 
     <link rel="alternate" type="application/atom+xml" title="Log Feed" href="/feed.xml">
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="preload" href="/css/style.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="/css/style.css"></noscript>
   </head>
   <body>
     <a class="skip-link" href="#maincontent">Skip to main content</a>

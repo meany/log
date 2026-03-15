@@ -7,6 +7,8 @@ pagination:
 permalink: "/tags/{{ tag | slug }}/index.html"
 eleventyComputed:
   title: "Tag: {{ tag }}"
+  description: "Entries tagged {{ tag }} on the engineering log for Azure, GitHub, policy, and web ops."
+  keywords: "{{ tag }}, engineering log, Azure, GitHub, policy, web ops"
 ---
 <section>
   <h1>Tag: #{{ tag }}</h1>

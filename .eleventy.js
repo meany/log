@@ -39,6 +39,25 @@ module.exports = function (eleventyConfig) {
     return fallback;
   });
 
+  eleventyConfig.addFilter("socialImageType", (imagePath) => {
+    const assetPath = imagePath || "/og-image.svg";
+    const extension = path.extname(assetPath.split("?")[0].split("#")[0]).toLowerCase();
+
+    switch (extension) {
+      case ".png":
+        return "image/png";
+      case ".jpg":
+      case ".jpeg":
+        return "image/jpeg";
+      case ".webp":
+        return "image/webp";
+      case ".gif":
+        return "image/gif";
+      default:
+        return "image/svg+xml";
+    }
+  });
+
   // Configure markdown-it with heading anchor IDs (required for ToC links)
   const md = markdownIt({ html: true, linkify: true })
     .use(markdownItAnchor);
