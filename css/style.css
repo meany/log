@@ -19,6 +19,10 @@ body {
   height: 100%;
 }
 
+html {
+  scroll-padding-top: 2.75rem;
+}
+
 body {
   display: flex;
   flex-direction: column;
@@ -59,7 +63,7 @@ button:focus-visible {
 }
 
 .shell {
-  width: min(72ch, 100% - 2rem);
+  width: min(120ch, 100% - 2rem);
   margin: 0 auto;
 }
 
@@ -80,13 +84,22 @@ button:focus-visible {
 }
 
 .brand {
+  align-items: center;
+  display: inline-flex;
   font-weight: 700;
   margin-right: auto;
+  min-height: 3.25rem;
+}
+
+.brand svg {
+  display: block;
+  height: 24px;
+  width: 24px;
 }
 
 main {
   flex: 1;
-  padding: 2rem 0 1.5rem;
+  padding: 0 0 1.5rem;
 }
 
 h1,
@@ -124,8 +137,15 @@ code {
   font-family: inherit;
 }
 
+:not(pre) > code {
+  background: color-mix(in srgb, var(--panel), var(--bg) 30%);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.1em 0.36em;
+}
+
 pre {
-  background: var(--panel);
+  background: color-mix(in srgb, var(--bg), black 20%);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 1rem;
@@ -141,9 +161,10 @@ iframe {
 }
 
 .site-footer {
+  background: color-mix(in srgb, var(--bg), black 20%);
   border-top: 1px solid var(--border);
   color: var(--muted);
-  padding: 1rem 0 2rem;
+  width: 100%;
 }
 
 @media (max-width: 640px) {
@@ -177,5 +198,361 @@ iframe {
   .log-list li,
   .tag-index li {
     border-color: ButtonBorder;
+  }
+}
+
+/* ── Visually hidden (screen-reader only) ───────────────────── */
+.sr-only {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+/* ── ASCII hero ─────────────────────────────────────────────── */
+.ascii-hero {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: clamp(0.55rem, 1.2vw, 0.78rem);
+  line-height: 1;
+  margin: 0.5rem 0 -2.5rem;
+  overflow-x: hidden;
+  padding: 0;
+  pointer-events: none;
+  position: relative;
+  user-select: none;
+  z-index: 0;
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 50%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 50%, transparent 100%);
+}
+
+/* entries list sits above the faded ASCII art */
+.ascii-hero + .log-list {
+  background: color-mix(in srgb, var(--bg), transparent 50%);
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Table of contents ──────────────────────────────────────── */
+.toc {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  float: right;
+  font-size: 0.9em;
+  margin: 0 0 1rem 1.2rem;
+  padding: 0.75rem 1rem;
+  width: min(36ch, 45%);
+}
+
+.toc-title {
+  color: var(--text);
+  font-size: 0.95em;
+  font-weight: 700;
+  border-bottom: 1px dashed var(--border);
+  margin: 0 0 0.45rem;
+  padding-bottom: 0.35rem;
+}
+
+.toc ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.toc li {
+  padding: 0.15rem 0;
+}
+
+.toc li.toc-h3 {
+  padding-left: 1.25rem;
+}
+
+.toc a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.toc a:hover,
+.toc a:focus-visible {
+  color: var(--accent);
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ── Numbered headings (CSS counters) ───────────────────────── */
+article {
+  counter-reset: h2counter;
+}
+
+article h2 {
+  counter-increment: h2counter;
+  counter-reset: h3counter;
+}
+
+article h2::before {
+  color: var(--muted);
+  content: counter(h2counter) ". ";
+  font-weight: normal;
+}
+
+article h3 {
+  counter-increment: h3counter;
+}
+
+article h3::before {
+  color: var(--muted);
+  content: counter(h2counter) "." counter(h3counter) ". ";
+  font-weight: normal;
+}
+
+article h2,
+article h3 {
+  scroll-margin-top: 3.25rem;
+}
+
+article h2,
+article h3 {
+  position: relative;
+}
+
+.heading-anchor {
+  color: var(--muted);
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  margin-left: 0.35rem;
+  opacity: 0;
+  text-decoration: none;
+  transition: opacity 120ms ease-in-out;
+  vertical-align: middle;
+}
+
+.heading-anchor svg {
+  display: block;
+  height: 0.58em;
+  width: 0.58em;
+}
+
+article h2:hover .heading-anchor,
+article h3:hover .heading-anchor,
+.heading-anchor:focus-visible {
+  opacity: 1;
+}
+
+/* code block chrome */
+.code-block {
+  margin: 1rem 0;
+  position: relative;
+}
+
+.code-block-label {
+  background: color-mix(in srgb, var(--bg), black 20%);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  color: var(--muted);
+  display: inline-block;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  margin: 0;
+  padding: 0.18rem 0.5rem;
+  text-transform: uppercase;
+}
+
+.code-block-diff pre {
+  border-top-left-radius: 0;
+  margin-top: 0;
+}
+
+.code-block pre {
+  margin: 0;
+}
+
+.code-copy-btn {
+  align-items: center;
+  background: color-mix(in srgb, var(--bg), black 20%);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.82em;
+  height: 1.6rem;
+  justify-content: center;
+  line-height: 1;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 1.6rem;
+  z-index: 2;
+}
+
+.code-copy-btn svg {
+  display: block;
+  height: 0.88rem;
+  width: 0.88rem;
+}
+
+.code-copy-btn:hover,
+.code-copy-btn:focus-visible {
+  color: var(--accent);
+}
+
+/* ── Prism syntax highlighting (terminal green theme) ───────── */
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: #9bb59f;
+}
+
+.token.punctuation {
+  color: #d5e1d9;
+}
+
+.token.namespace {
+  opacity: 0.7;
+}
+
+.token.property,
+.token.tag,
+.token.constant,
+.token.symbol,
+.token.deleted {
+  color: #ff9f7a;
+}
+
+.token.boolean,
+.token.number {
+  color: #ffd27a;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+  color: #9cf3c3;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+  color: #d8e7df;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+  color: #7ad1ff;
+}
+
+.token.function,
+.token.class-name {
+  color: #d2a6ff;
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+  color: #8be9ff;
+}
+
+.token.important,
+.token.bold {
+  font-weight: bold;
+}
+
+.token.italic {
+  font-style: italic;
+}
+
+/* diff blocks: inserted/deleted line highlights */
+.language-diff .token.deleted {
+  background: rgba(220, 80, 80, 0.2);
+  color: #ffc0b7;
+  display: block;
+}
+
+.language-diff .token.inserted {
+  background: rgba(70, 210, 120, 0.2);
+  color: #b8ffd5;
+  display: block;
+}
+
+/* Keep +/- prefix and line text together while retaining block line highlights */
+.language-diff .token.prefix.inserted,
+.language-diff .token.prefix.deleted {
+  background: transparent;
+  display: inline;
+  margin-right: 0.55ch;
+}
+
+/* ── Footer inner layout ────────────────────────────────────── */
+.footer-inner {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.9rem 0 1.5rem;
+}
+
+.footer-tagline {
+  color: var(--muted);
+  font-size: 0.85em;
+  margin: 0;
+  margin-right: auto;
+}
+
+.footer-links {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.footer-links a {
+  align-items: center;
+  color: var(--muted);
+  display: inline-flex;
+  text-decoration: none;
+}
+
+.footer-links a:hover,
+.footer-links a:focus-visible {
+  color: var(--accent);
+}
+
+.footer-links svg {
+  display: block;
+}
+
+@media (max-width: 900px) {
+  .toc {
+    float: none;
+    margin: 0 0 1.5rem;
+    width: 100%;
+  }
+}
+
+@media (forced-colors: active) {
+  .code-copy-btn {
+    background: Canvas;
+    border-color: ButtonBorder;
+    color: ButtonText;
+  }
+
+  .heading-anchor {
+    color: LinkText;
   }
 }
