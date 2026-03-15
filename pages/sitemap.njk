@@ -1,0 +1,15 @@
+---
+permalink: /sitemap.xml
+eleventyExcludeFromCollections: true
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{% for item in collections.all %}
+  {% if item.url and item.url != "/feed.xml" and item.url != "/sitemap.xml" and item.url != "/robots.txt" %}
+  <url>
+    <loc>https://log.meany.xyz{{ item.url }}</loc>
+    {% if item.date %}<lastmod>{{ item.date | isoDate }}</lastmod>{% endif %}
+  </url>
+  {% endif %}
+{% endfor %}
+</urlset>

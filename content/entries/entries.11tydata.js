@@ -9,6 +9,7 @@ module.exports = {
     return `/entries/${slug}/`;
   },
   eleventyComputed: {
-    title: (data) => data.title
+    title: (data) => data.title,
+    description: (data) => data.summary || "Field log entry from log.meany.xyz"
   }
 };

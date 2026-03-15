@@ -1,9 +1,58 @@
 <!doctype html>
 <html lang="en">
   <head>
+    {% set siteName = "log.meany.xyz" %}
+    {% set siteUrl = "https://log.meany.xyz" %}
+    {% set pagePath = page.url or "/" %}
+    {% set canonicalUrl = siteUrl + pagePath %}
+    {% set pageTitle = title if title and title != siteName else siteName %}
+    {% set pageDescription = description or summary or "Field notes from real systems work: migration, policy, operations, and static engineering logs." %}
+    {% set ogImagePath = featured_image or "/og-image.svg" %}
+    {% if ogImagePath[0] == "/" %}
+      {% set ogImageUrl = siteUrl + ogImagePath %}
+    {% else %}
+      {% set ogImageUrl = ogImagePath %}
+    {% endif %}
+
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% if title and title != "log.meany.xyz" %}{{ title }} | {% endif %}log.meany.xyz</title>
+    <title>{% if title and title != siteName %}{{ title }} | {% endif %}{{ siteName }}</title>
+
+    <meta name="description" content="{{ pageDescription }}">
+    <link rel="canonical" href="{{ canonicalUrl }}">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+    <meta property="og:type" content="{% if pagePath and '/entries/' in pagePath %}article{% else %}website{% endif %}">
+    <meta property="og:site_name" content="{{ siteName }}">
+    <meta property="og:title" content="{{ pageTitle }}">
+    <meta property="og:description" content="{{ pageDescription }}">
+    <meta property="og:url" content="{{ canonicalUrl }}">
+    <meta property="og:image" content="{{ ogImageUrl }}">
+    <meta property="og:image:alt" content="{{ pageTitle }}">
+    <meta property="og:image:type" content="image/svg+xml">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ pageTitle }}">
+    <meta name="twitter:description" content="{{ pageDescription }}">
+    <meta name="twitter:image" content="{{ ogImageUrl }}">
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "{% if pagePath and '/entries/' in pagePath %}BlogPosting{% else %}WebSite{% endif %}",
+        "name": "{{ pageTitle }}",
+        "url": "{{ canonicalUrl }}",
+        "description": "{{ pageDescription }}"{% if pagePath and '/entries/' in pagePath %},
+        "headline": "{{ pageTitle }}",
+        "datePublished": "{{ date | isoDate }}",
+        "author": {
+          "@type": "Person",
+          "name": "{{ author or 'meany' }}"
+        },
+        "image": "{{ ogImageUrl }}"{% endif %}
+      }
+    </script>
+
     <link rel="alternate" type="application/atom+xml" title="Log Feed" href="/feed.xml">
     <link rel="stylesheet" href="/css/style.css">
   </head>
