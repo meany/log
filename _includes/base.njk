@@ -7,7 +7,7 @@
     {% set canonicalUrl = siteUrl + pagePath %}
     {% set pageTitle = title if title and title != siteName else siteName %}
     {% set pageDescription = description or summary or "Field notes from real systems work: migration, policy, operations, and static engineering logs." %}
-    {% set ogImagePath = featured_image or "/og-image.svg" %}
+    {% set ogImagePath = (og_image or featured_image) | socialImagePath %}
     {% if ogImagePath[0] == "/" %}
       {% set ogImageUrl = siteUrl + ogImagePath %}
     {% else %}

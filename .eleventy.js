@@ -1,4 +1,6 @@
 const { DateTime } = require("luxon");
+const fs = require("node:fs");
+const path = require("node:path");
 const pluginRss = require("@11ty/eleventy-plugin-rss");
 const syntaxHighlight = require("@11ty/eleventy-plugin-syntaxhighlight");
 const markdownIt = require("markdown-it");
@@ -8,8 +10,34 @@ const htmlmin = require("html-minifier-terser");
 const EXCLUDED_TAGS = new Set(["all", "nav", "post", "entries", "tagList"]);
 
 module.exports = function (eleventyConfig) {
+  const rootDir = process.cwd();
+  const localAssetExists = (assetPath) => {
+    const clean = assetPath.split("?")[0].split("#")[0];
+    const relative = clean.replace(/^\//, "");
+    const candidates = [
+      path.join(rootDir, "static", relative),
+      path.join(rootDir, relative),
+      path.join(rootDir, "content", relative),
+    ];
+    return candidates.some((filePath) => fs.existsSync(filePath));
+  };
+
   eleventyConfig.addPlugin(pluginRss);
   eleventyConfig.addPlugin(syntaxHighlight);
+
+  eleventyConfig.addFilter("socialImagePath", (imagePath) => {
+    const fallback = "/og-image.svg";
+    if (!imagePath) {
+      return fallback;
+    }
+    if (/^https?:\/\//i.test(imagePath)) {
+      return imagePath;
+    }
+    if (imagePath.startsWith("/") && localAssetExists(imagePath)) {
+      return imagePath;
+    }
+    return fallback;
+  });
 
   // Configure markdown-it with heading anchor IDs (required for ToC links)
   const md = markdownIt({ html: true, linkify: true })
