@@ -27,7 +27,7 @@ body {
   display: flex;
   flex-direction: column;
   color: var(--text);
-  font-family: "IBM Plex Mono", "Consolas", "Menlo", "Monaco", monospace;
+  font-family: "Droid Sans Mono","Noto Sans Mono","SFMono-Regular","Roboto Mono","SF Mono","Monaco","Inconsolata","Source Code Pro","Menlo","Consolas","DejaVu Sans Mono","Courier New","Lucida Console","Liberation Mono","Courier",monospace;
   line-height: 1.65;
   background: var(--bg);
 }
@@ -220,22 +220,21 @@ iframe {
   background: transparent;
   border: none;
   color: var(--muted);
-  font-size: clamp(0.55rem, 1.2vw, 0.78rem);
-  line-height: 1;
-  margin: 0.5rem 0 -2.5rem;
+  font-size: 0.75rem;
+  line-height: 0.75rem;
+  margin: 0.5rem 0 -3.25rem;
   overflow-x: hidden;
-  padding: 0;
+  padding-left: 2.5rem;
   pointer-events: none;
   position: relative;
   user-select: none;
   z-index: 0;
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 50%, transparent 100%);
-  mask-image: linear-gradient(to bottom, black 0%, black 50%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 44%, transparent 88%);
+  mask-image: linear-gradient(to bottom, black 0%, black 44%, transparent 88%);
 }
 
 /* entries list sits above the faded ASCII art */
 .ascii-hero + .log-list {
-  background: color-mix(in srgb, var(--bg), transparent 50%);
   position: relative;
   z-index: 1;
 }
