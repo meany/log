@@ -72,26 +72,28 @@ from the list output (a 24-character hexadecimal ID).
 Set the full allowed resource type list on the assignment:
 
 ```bash
-az policy assignment update --scope "${SCOPE}" --name "<assignment-name-id>" --params '{"listOfResourceTypesAllowed": {"value": [
-"Microsoft.AppAssessment/*",
-"Microsoft.ApplicationMigration/*",
-"Microsoft.Authorization/*",
-"Microsoft.Consumption/budgets",
-"Microsoft.CostManagement/budgets",
-"Microsoft.DataReplication/replicationVaults",
-"Microsoft.DependencyMap/*",
-"Microsoft.KeyVault/*",
-"Microsoft.ManagedIdentity/*",
-"Microsoft.Migrate/*",
-"Microsoft.MySQLDiscovery/*",
-"Microsoft.OffAzure/*",
-"Microsoft.RecoveryServices/*",
-"Microsoft.Resources/deployments",
-"Microsoft.Resources/subscriptions",
-"Microsoft.Resources/subscriptions/*",
-"Microsoft.Storage/storageAccounts",
-"Microsoft.Storage/storageAccounts/blobServices"
-]}}'
+az policy assignment update --scope "${SCOPE}" \
+  --name "<assignment-name-id>" \
+  --params '{"listOfResourceTypesAllowed": {"value": [
+    "Microsoft.AppAssessment/*",
+    "Microsoft.ApplicationMigration/*",
+    "Microsoft.Authorization/*",
+    "Microsoft.Consumption/budgets",
+    "Microsoft.CostManagement/budgets",
+    "Microsoft.DataReplication/replicationVaults",
+    "Microsoft.DependencyMap/*",
+    "Microsoft.KeyVault/*",
+    "Microsoft.ManagedIdentity/*",
+    "Microsoft.Migrate/*",
+    "Microsoft.MySQLDiscovery/*",
+    "Microsoft.OffAzure/*",
+    "Microsoft.RecoveryServices/*",
+    "Microsoft.Resources/deployments",
+    "Microsoft.Resources/subscriptions",
+    "Microsoft.Resources/subscriptions/*",
+    "Microsoft.Storage/storageAccounts",
+    "Microsoft.Storage/storageAccounts/blobServices"
+  ]}}'
 ```
 
 You can set this `value` during policy creation. I landed on this list only after
@@ -174,3 +176,7 @@ az consumption budget show --subscription "${SUBSCRIPTION_ID}" --budget-name "${
   `listOfResourceTypesAllowed`.
 - `az policy assignment list --management-group "${MG_NAME}"` helps discover
   existing assignment names when you are troubleshooting old assignments.
+
+```diff
++ readability of az policy assignment update
+```
