@@ -10,7 +10,7 @@ RUN npm run build
 
 FROM alpine:3.20
 
-RUN apk add --no-cache curl jq unzip rsync nginx supervisor
+RUN apk add --no-cache bash curl jq unzip rsync nginx supervisor
 
 WORKDIR /app
 
