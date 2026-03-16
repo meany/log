@@ -5,7 +5,8 @@
   "description": "Minimal static log for meany.xyz",
   "scripts": {
     "dev": "eleventy --serve",
-    "build": "eleventy",
+    "clean": "node -e \"require('node:fs').rmSync('_site', { recursive: true, force: true })\"",
+    "build": "npm run clean && eleventy",
     "entry": "node scripts/new-entry.js"
   },
   "devDependencies": {

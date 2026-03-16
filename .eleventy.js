@@ -145,7 +145,7 @@ module.exports = function (eleventyConfig) {
   });
 
   eleventyConfig.addPassthroughCopy("css");
-  eleventyConfig.addPassthroughCopy("static");
+  eleventyConfig.addPassthroughCopy({ "static": "/" });
 
   eleventyConfig.addFilter("readableDate", (dateObj) => {
     return DateTime.fromJSDate(dateObj, { zone: "utc" }).toFormat("yyyy-LL-dd");
