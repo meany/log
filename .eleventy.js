@@ -9,8 +9,76 @@ const htmlmin = require("html-minifier-terser");
 
 const EXCLUDED_TAGS = new Set(["all", "nav", "post", "entries", "tagList"]);
 
+const getDirectorySize = (dirPath) => {
+  if (!fs.existsSync(dirPath)) {
+    return 0;
+  }
+
+  let total = 0;
+  for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
+    const fullPath = path.join(dirPath, entry.name);
+    if (entry.isDirectory()) {
+      total += getDirectorySize(fullPath);
+      continue;
+    }
+    if (entry.isFile()) {
+      total += fs.statSync(fullPath).size;
+    }
+  }
+  return total;
+};
+
+const formatHumanSize = (bytes) => {
+  if (bytes < 1024) {
+    return `${bytes}B`;
+  }
+
+  const units = ["K", "M", "G", "T", "P"];
+  let value = bytes;
+  let unitIndex = -1;
+
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+
+  const rounded = value >= 10 ? Math.round(value) : Math.round(value * 10) / 10;
+  return `${rounded}${units[unitIndex]}`;
+};
+
+const getFooterParent = (pageUrl) => {
+  if (!pageUrl || pageUrl === "/") {
+    return "./";
+  }
+
+  const depth = pageUrl.split("/").filter(Boolean).length;
+  return "../".repeat(depth);
+};
+
+const collectHtmlFiles = (dirPath) => {
+  if (!fs.existsSync(dirPath)) {
+    return [];
+  }
+
+  const htmlFiles = [];
+  for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
+    const fullPath = path.join(dirPath, entry.name);
+    if (entry.isDirectory()) {
+      htmlFiles.push(...collectHtmlFiles(fullPath));
+      continue;
+    }
+    if (entry.isFile() && fullPath.endsWith(".html")) {
+      htmlFiles.push(fullPath);
+    }
+  }
+  return htmlFiles;
+};
+
 module.exports = function (eleventyConfig) {
   const rootDir = process.cwd();
+  const footerSizeToken = "__FOOTER_SIZE__";
+  const footerDateToken = "__FOOTER_DATE__";
+
   const localAssetExists = (assetPath) => {
     const clean = assetPath.split("?")[0].split("#")[0];
     const relative = clean.replace(/^\//, "");
@@ -55,6 +123,33 @@ module.exports = function (eleventyConfig) {
         return "image/gif";
       default:
         return "image/svg+xml";
+    }
+  });
+
+  eleventyConfig.addFilter("footerParent", (pageUrl) => {
+    return getFooterParent(pageUrl);
+  });
+
+  eleventyConfig.addGlobalData("footer", {
+    size: footerSizeToken,
+    date: footerDateToken,
+  });
+
+  eleventyConfig.on("eleventy.after", ({ dir }) => {
+    const outputDir = path.join(rootDir, dir?.output || "_site");
+    const size = formatHumanSize(getDirectorySize(outputDir));
+    const buildDate = DateTime.now().toFormat("LLL dd yyyy");
+    const htmlFiles = collectHtmlFiles(outputDir);
+
+    for (const htmlPath of htmlFiles) {
+      const content = fs.readFileSync(htmlPath, "utf8");
+      const replaced = content
+        .replaceAll(footerSizeToken, size)
+        .replaceAll(footerDateToken, buildDate);
+
+      if (replaced !== content) {
+        fs.writeFileSync(htmlPath, replaced, "utf8");
+      }
     }
   });
 

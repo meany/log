@@ -4,18 +4,18 @@ eleventyExcludeFromCollections: true
 ---
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-  <title>log.meany.xyz</title>
-  <subtitle>Personal field log</subtitle>
-  <link href="https://log.meany.xyz/feed.xml" rel="self"/>
-  <link href="https://log.meany.xyz/"/>
+  <title>{{ site.name }}</title>
+  <subtitle>{{ site.subtitle }}</subtitle>
+  <link href="{{ site.url }}/feed.xml" rel="self"/>
+  <link href="{{ site.url }}/"/>
   <updated>{{ collections.entries[0].date | isoDate }}</updated>
-  <id>https://log.meany.xyz/</id>
+  <id>{{ site.url }}/</id>
   {% for entry in collections.entries %}
   <entry>
     <title>{{ entry.data.title }}</title>
-    <link href="https://log.meany.xyz{{ entry.url }}"/>
+    <link href="{{ site.url }}{{ entry.url }}"/>
     <updated>{{ entry.date | isoDate }}</updated>
-    <id>https://log.meany.xyz{{ entry.url }}</id>
+    <id>{{ site.url }}{{ entry.url }}</id>
     <summary>{{ entry.data.summary }}</summary>
     <author>
       <name>{{ entry.data.author }}</name>

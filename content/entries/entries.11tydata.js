@@ -1,5 +1,6 @@
 const fs = require("node:fs");
 const path = require("node:path");
+const site = require("../../_data/site.js");
 
 const rootDir = process.cwd();
 const resolveSocialImage = (imagePath) => {
@@ -35,7 +36,7 @@ module.exports = {
   },
   eleventyComputed: {
     title: (data) => data.title,
-    description: (data) => data.summary || "Field log entry from log.meany.xyz",
+    description: (data) => data.summary || `Field log entry from ${site.name}`,
     og_image: (data) => resolveSocialImage(data.og_image || data.featured_image)
   }
 };

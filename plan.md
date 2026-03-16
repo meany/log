@@ -15,6 +15,7 @@
 - Feed: Atom enabled
 - Listing: single reverse-chron index for now; revisit pagination after ~25 entries
 - Deploy model: GitHub Actions build -> deploy artifacts -> server-side pull via timer
+- Metadata pattern: keep stable site values in `_data/site.js`; generate footer build values in `.eleventy.js` (`footerParent` from URL depth, `footer.size`/`footer.date` from final `_site` output)
 
 ## Quality Standards
 - HTML output: WCAG 2.2 Level AA conformance
@@ -65,9 +66,6 @@ log.meany.xyz/
 
 ## Deployment Workflow
 See [docs/DOCKER.md](docs/DOCKER.md) and [docs/DEPLOY.md](docs/DEPLOY.md) for complete CI/CD model.
-
-## Open TODOs
-- Syntax highlighting and change visualization (see [docs/DOCKER.md](docs/DOCKER.md#open-todos))
 
 ## Non-Goals
 - No CMS
