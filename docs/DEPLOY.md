@@ -39,15 +39,13 @@ Do **not** grant any write permissions. This token is read-only for artifact acc
 
 ## Environment File (`.env`)
 
-```
-GITHUB_OWNER=<your-username>
-GITHUB_REPO=<your-repo-name>
-GITHUB_TOKEN=ghp_your_fine_grained_token_here
-WORKFLOW_FILE=build.yml
-ARTIFACT_NAME=site
-BRANCH=main
-POLL_INTERVAL_SECONDS=120
-```
+See [`docker/.env.example`](../docker/.env.example) for all available variables. Required:
+
+- `GITHUB_OWNER` — GitHub username or organisation
+- `GITHUB_REPO` — repository name
+- `GITHUB_TOKEN` — fine-grained PAT (see [GitHub Token Setup](#github-token-setup) above)
+
+Optional: `POLL_INTERVAL_SECONDS` (default: `120`), `DISCORD_WEBHOOK_URL` (Discord channel webhook for deploy notifications), `RUN_ONCE`, `DEBUG_API`.
 
 ## Architecture
 

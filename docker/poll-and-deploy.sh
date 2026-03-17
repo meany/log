@@ -11,6 +11,7 @@ POLL_INTERVAL_SECONDS="${POLL_INTERVAL_SECONDS:-120}"
 BRANCH="main"
 RUN_ONCE="${RUN_ONCE:-false}"
 DEBUG_API="${DEBUG_API:-false}"
+DISCORD_WEBHOOK_URL="${DISCORD_WEBHOOK_URL:-}"
 
 require_env() {
   name="$1"
@@ -32,6 +33,8 @@ fi
 
 mkdir -p "$STATE_DIR" "$SITE_DIR" "$WORK_DIR"
 LAST_RUN_FILE="$STATE_DIR/last_run_id"
+# Force a deploy on every container start, regardless of prior state.
+rm -f "$LAST_RUN_FILE"
 
 api_get() {
   url="$1"
@@ -54,6 +57,24 @@ api_get() {
   fi
 
   cat "$tmp_body"
+}
+
+notify_discord() {
+  local status="$1"
+  local description="$2"
+  [ -z "$DISCORD_WEBHOOK_URL" ] && return 0
+
+  local color=3066993
+  [ "$status" = "failure" ] && color=15158332
+
+  local payload
+  payload="$(jq -n --arg desc "$description" --argjson color "$color" \
+    '{"embeds":[{"title":"poll-and-deploy","description":$desc,"color":$color}]}')"
+
+  curl -sSf -X POST "$DISCORD_WEBHOOK_URL" \
+    -H "Content-Type: application/json" \
+    -d "$payload" \
+    > /dev/null 2>&1 || true
 }
 
 deploy_latest() {
@@ -109,12 +130,14 @@ deploy_latest() {
 
   echo "$run_id" > "$LAST_RUN_FILE"
   echo "[DEPLOY] Success. run_id=$run_id sha=$head_sha. Site updated at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  notify_discord success "Deployed \`${run_id}\` (\`${head_sha:0:7}\`) at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
 
 while true; do
   if [ "$polling_enabled" = "true" ]; then
     if ! deploy_latest; then
       echo "Deploy attempt failed; retrying in $POLL_INTERVAL_SECONDS seconds" >&2
+      notify_discord failure "Deploy failed for \`$GITHUB_OWNER/$GITHUB_REPO\` at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
     fi
   fi
 

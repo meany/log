@@ -3,21 +3,9 @@
 Use this when troubleshooting poll-agent behavior (for example `403` when reading
 GitHub Actions artifacts).
 
-### Required `docker/.env` Values
+### `docker/.env` Values
 
-```dotenv
-GITHUB_OWNER=meany
-GITHUB_REPO=log
-GITHUB_TOKEN=<fine-grained-pat>
-POLL_INTERVAL_SECONDS=120
-```
-
-The following values are fixed in `docker/poll-and-deploy.sh` and are not
-configured via `.env`:
-
-- `WORKFLOW_FILE=build.yml`
-- `BRANCH=main`
-- `ARTIFACT_NAME=site`
+See the [Environment File](../docs/DEPLOY.md#environment-file-env) section in DEPLOY.md. For local testing, `RUN_ONCE=true` and `DEBUG_API=true` are useful additions.
 
 ### Run Poll Script Once (Local)
 
@@ -39,7 +27,4 @@ docker compose -f docker/docker-compose.prod.yml logs -f log-site
 
 ### Required Token Permission
 
-For `GITHUB_TOKEN` (fine-grained PAT), grant repository access to `meany/log`
-and set:
-
-- `Actions: Read`
+See [GitHub Token Setup](../docs/DEPLOY.md#github-token-setup) in DEPLOY.md.
