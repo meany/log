@@ -33,7 +33,7 @@ const formatHumanSize = (bytes) => {
     return `${bytes}B`;
   }
 
-  const units = ["K", "M", "G", "T", "P"];
+  const units = ["Kb", "Mb", "Gb"];
   let value = bytes;
   let unitIndex = -1;
 
@@ -243,7 +243,7 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "static": "/" });
 
   eleventyConfig.addFilter("readableDate", (dateObj) => {
-    return DateTime.fromJSDate(dateObj, { zone: "utc" }).toFormat("yyyy-LL-dd");
+    return DateTime.fromJSDate(dateObj, { zone: "utc" }).toFormat("LLL dd yyyy");
   });
 
   eleventyConfig.addFilter("isoDate", (dateObj) => {

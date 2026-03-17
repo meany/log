@@ -7,9 +7,14 @@ permalink: /tags/
 ---
 <section>
   <h1>Tags</h1>
-  <ul class="tag-index">
+  <ul class="tag-index tag-cloud" role="list">
     {% for tag in collections.tagList %}
-      <li><a href="/tags/{{ tag | slug }}/">#{{ tag }}</a></li>
+      <li class="tag-cloud-item">
+        <a href="/tags/{{ tag | slug }}/" aria-label="#{{ tag }} ({{ (collections[tag] or []) | length }} posts)">
+          <span>#{{ tag }}</span>
+          <span class="tag-count" aria-hidden="true">{{ (collections[tag] or []) | length }}</span>
+        </a>
+      </li>
     {% endfor %}
   </ul>
 </section>
