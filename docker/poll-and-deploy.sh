@@ -33,8 +33,11 @@ fi
 
 mkdir -p "$STATE_DIR" "$SITE_DIR" "$WORK_DIR"
 LAST_RUN_FILE="$STATE_DIR/last_run_id"
+LAST_SHA_FILE="$STATE_DIR/last_sha"
 # Force a deploy on every container start, regardless of prior state.
 rm -f "$LAST_RUN_FILE"
+# Do not remove last_sha file to persist last deployed SHA
+
 
 api_get() {
   url="$1"
@@ -94,8 +97,18 @@ deploy_latest() {
     last_run_id="$(cat "$LAST_RUN_FILE")"
   fi
 
+  last_sha=""
+  if [ -f "$LAST_SHA_FILE" ]; then
+    last_sha="$(cat "$LAST_SHA_FILE")"
+  fi
+
+  if [ "$head_sha" = "$last_sha" ]; then
+    echo "Container started successfully with SHA $head_sha"
+    notify_discord success "Container started successfully with SHA \\`${head_sha:0:7}\\`"
+    return 0
+  fi
+
   if [ "$run_id" = "$last_run_id" ]; then
-    echo "No new build artifact. run_id=$run_id"
     return 0
   fi
 
@@ -144,6 +157,7 @@ deploy_latest() {
   fi
 
   echo "$run_id" > "$LAST_RUN_FILE"
+  echo "$head_sha" > "$LAST_SHA_FILE"
   echo "[DEPLOY] Success. run_id=$run_id sha=$head_sha. Site updated at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   notify_discord success "Deployed \`${run_id}\` (\`${head_sha:0:7}\`) at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
