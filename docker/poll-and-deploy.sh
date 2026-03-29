@@ -14,7 +14,8 @@ DEBUG_API="${DEBUG_API:-false}"
 DISCORD_WEBHOOK_URL="${DISCORD_WEBHOOK_URL:-}"
 
 require_env() {
-  name="$1"
+  local name="$1"
+  local value
   eval "value=\${$name:-}"
   if [ -z "$value" ]; then
     echo "Missing required env var: $name" >&2
@@ -22,10 +23,11 @@ require_env() {
   fi
 }
 
-polling_enabled="true"
+POLLING_ENABLED="true"
+STARTUP_CHECK="true"
 
 if [ -z "${GITHUB_OWNER:-}" ] || [ -z "${GITHUB_REPO:-}" ] || [ -z "${GITHUB_TOKEN:-}" ]; then
-  polling_enabled="false"
+  POLLING_ENABLED="false"
   echo "GitHub env vars not set. Poll agent is idle (serving bundled /site content only)."
 else
   echo "Poll agent started. Polling $GITHUB_OWNER/$GITHUB_REPO for new builds every $POLL_INTERVAL_SECONDS seconds."
@@ -103,8 +105,12 @@ deploy_latest() {
   fi
 
   if [ "$head_sha" = "$last_sha" ]; then
-    echo "Container started successfully with SHA $head_sha"
-    notify_discord success "Container started successfully with SHA \`${head_sha:0:7}\`"
+    if [ "$STARTUP_CHECK" = "true" ]; then
+      echo "Container started successfully with SHA $head_sha"
+      notify_discord success "Container started successfully with SHA \`${head_sha:0:7}\`"
+    else
+      echo "No changes detected. Current SHA $head_sha"
+    fi
     return 0
   fi
 
@@ -163,11 +169,12 @@ deploy_latest() {
 }
 
 while true; do
-  if [ "$polling_enabled" = "true" ]; then
+  if [ "$POLLING_ENABLED" = "true" ]; then
     if ! deploy_latest; then
       echo "Deploy attempt failed; retrying in $POLL_INTERVAL_SECONDS seconds" >&2
       notify_discord failure "Deploy failed for \`$GITHUB_OWNER/$GITHUB_REPO\` at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
     fi
+    STARTUP_CHECK="false"
   fi
 
   if [ "$RUN_ONCE" = "true" ]; then
