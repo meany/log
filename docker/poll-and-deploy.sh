@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eu
+set -euo pipefail
 
 API_BASE="https://api.github.com"
 STATE_DIR="${STATE_DIR:-/state}"
@@ -102,10 +102,10 @@ deploy_latest() {
   artifacts_url="$API_BASE/repos/$GITHUB_OWNER/$GITHUB_REPO/actions/runs/$run_id/artifacts"
   artifacts_json="$(api_get "$artifacts_url")"
 
-  download_url="$(echo "$artifacts_json" | jq -r --arg name "$ARTIFACT_NAME" '.artifacts[] | select(.name == $name) | .archive_download_url' | head -n1)"
+  download_url="$(echo "$artifacts_json" | jq -r --arg name "$ARTIFACT_NAME" '.artifacts[] | select(.name == $name and (.expired | not)) | .archive_download_url' | head -n1)"
 
   if [ -z "$download_url" ] || [ "$download_url" = "null" ]; then
-    echo "Artifact '$ARTIFACT_NAME' not found for run_id=$run_id"
+    echo "Artifact '$ARTIFACT_NAME' not found (or expired) for run_id=$run_id"
     return 1
   fi
 
@@ -117,16 +117,31 @@ deploy_latest() {
   mkdir -p "$tmp_dir" "$out_dir"
 
   echo "Downloading artifact run_id=$run_id sha=$head_sha"
-  curl -fsSL \
+  if ! curl -fsSL \
     -H "Accept: application/vnd.github+json" \
     -H "Authorization: Bearer $GITHUB_TOKEN" \
     -L "$download_url" \
-    -o "$zip_path"
+    -o "$zip_path"; then
+    echo "Artifact download failed for run_id=$run_id (URL may be expired or inaccessible)" >&2
+    return 1
+  fi
 
-  unzip -q "$zip_path" -d "$out_dir"
+  if ! unzip -q "$zip_path" -d "$out_dir"; then
+    echo "Artifact unzip failed for run_id=$run_id" >&2
+    return 1
+  fi
+
+  # Guard against wiping SITE_DIR with an empty or malformed artifact.
+  if [ ! -f "$out_dir/index.html" ]; then
+    echo "Artifact content validation failed for run_id=$run_id (missing index.html)" >&2
+    return 1
+  fi
 
   # Sync new static output into mounted site directory.
-  rsync -a --delete "$out_dir/" "$SITE_DIR/"
+  if ! rsync -a --delete "$out_dir/" "$SITE_DIR/"; then
+    echo "Site sync failed for run_id=$run_id" >&2
+    return 1
+  fi
 
   echo "$run_id" > "$LAST_RUN_FILE"
   echo "[DEPLOY] Success. run_id=$run_id sha=$head_sha. Site updated at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
