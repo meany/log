@@ -104,7 +104,7 @@ deploy_latest() {
 
   if [ "$head_sha" = "$last_sha" ]; then
     echo "Container started successfully with SHA $head_sha"
-    notify_discord success "Container started successfully with SHA \\`${head_sha:0:7}\\`"
+    notify_discord success "Container started successfully with SHA \`${head_sha:0:7}\`"
     return 0
   fi
 
