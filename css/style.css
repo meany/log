@@ -436,33 +436,37 @@ iframe {
   border: 1px solid var(--border);
   border-radius: 4px;
   float: right;
-  font-size: 0.9em;
-  margin: 0 0 1rem 1.2rem;
-  padding: 0.75rem 1rem;
-  width: min(36ch, 45%);
+  font-size: 0.86em;
+  line-height: 1.45;
+  margin: 0 0 0.85rem 1rem;
+  padding: 0.6rem 0.8rem;
+  width: min(32ch, 42%);
 }
 
 .toc-title {
   color: var(--text);
-  font-size: 0.95em;
+  font-size: 0.9em;
   font-weight: 700;
   border-bottom: 1px dotted var(--border);
-  margin: 0 0 0.45rem;
-  padding-bottom: 0.35rem;
+  margin: 0 0 0.3rem;
+  padding-bottom: 0.25rem;
 }
 
 .toc ol {
   list-style: none;
   margin: 0;
   padding: 0;
+  max-height: 12rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .toc li {
-  padding: 0.15rem 0;
+  padding: 0.1rem 0;
 }
 
 .toc li.toc-h3 {
-  padding-left: 1.25rem;
+  padding-left: 0.9rem;
 }
 
 .toc a {

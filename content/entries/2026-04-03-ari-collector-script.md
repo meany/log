@@ -4,7 +4,6 @@ title: "our Azure inventory collector script"
 tags:
   - azure
   - powershell
-  - ops
 author: "system"
 slug: "2026-04-03-ari-collector-script"
 summary: "Building the ARI wrapper script to make Azure inventory collection and upload safer, clearer, and easier to run from Azure CloudShell or local PowerShell."
@@ -23,7 +22,7 @@ messages so customers can run it without guesswork.
 wrapper makes execution and artifact handling predictable across customer
 environments.
 
-The script entry point is intentionally simple:
+The script entry point is intentionally simple. Run this from Azure CloudShell:
 
 ```powershell
 irm https://data.<domain>.com/ari.ps1 | iex
@@ -35,7 +34,7 @@ It can also be downloaded and run locally:
 
 ```powershell
 Invoke-WebRequest -Uri https://data.<domain>.com/ari.ps1 -OutFile ./ari.ps1
-pwsh ./ari.ps1
+./ari.ps1
 ```
 
 It can prompt for required values when they are not set in environment variables.
@@ -48,96 +47,47 @@ What we needed was a thin operational wrapper that:
 - uploads outputs with retry behavior that surfaces HTTP errors.
 
 ## What the wrapper adds
+The script keeps the ARI workflow operationally consistent:
 
-### Input and prompt flow
-
-The script supports both parameterized and prompt-driven usage:
-
-- `CustomerName` and `SasToken` can come from parameters or environment
-  variables. We usually provide these values during customer onboarding.
-- `-SkipUpload` keeps generation local and bypasses upload requirements. If
-  upload is not skipped, missing values are prompted interactively.
-
-### Clean output lifecycle
-
-Before each run, it resets any existing reports in the ARI output folder:
-
-- Windows: `C:\AzureResourceInventory`
-- Linux/Cloud Shell: `$HOME/AzureResourceInventory`
-
-That keeps each run deterministic and avoids stale file confusion.
-
-### Module bootstrapping
-
-The wrapper ensures required modules exist before execution:
-
-- `AzureResourceInventory`
-- `Az.CostManagement`
-
-Then it imports ARI and invokes:
+- Input flow: `CustomerName` and `SasToken` can come from parameters or
+  environment variables. If upload is enabled and values are missing, the
+  script prompts interactively.
+- Clean outputs: it clears the ARI output directory before each run to avoid
+  stale files (`C:\AzureResourceInventory` on Windows,
+  `$HOME/AzureResourceInventory` on Linux/Cloud Shell).
+- Module checks: it ensures `AzureResourceInventory` and `Az.CostManagement`
+  are available, then runs:
 
 ```powershell
 Invoke-ARI -Lite -SecurityCenter -IncludeTags -IncludeCosts -ReportName $reportName
 ```
 
-### Artifact selection
+- Artifact selection: it picks the latest generated `*_Report_*.xlsx` and
+  `*_Diagram_*.xml` files by timestamp.
+- Upload safety: it uploads as `BlockBlob` with timeout-focused retries and
+  returns HTTP status plus response details on failure.
+- Container normalization: it lowercases customer names, collapses invalid
+  characters to `-`, forces a `cust-` prefix, caps length, and applies a safe
+  fallback when needed.
 
-After generation, it selects the latest matching files by timestamp:
+## Run modes
 
-- `*_Report_*.xlsx`
-- `*_Diagram_*.xml`
-
-This avoids hardcoding file names while still producing predictable upload units.
-
-### Safer upload behavior
-
-Upload is done with explicit blob semantics and retry-on-timeout:
-
-- Uses `PUT` with `x-ms-blob-type: BlockBlob`
-- Retries up to 3 attempts on timeout-like failures
-- Includes a configurable timeout (default 300 seconds)
-
-The retry logic only runs on timeout signals, not on all HTTP failures.
-When an upload fails, the script extracts the HTTP status code, service
-response body, and exception text. It then returns a support-friendly
-single-line message to simplify troubleshooting.
-
-### Customer container normalization
-
-The wrapper normalizes customer names into valid container segments:
-
-- lowercase,
-- non-alphanumeric characters collapsed to `-`,
-- forced `cust-` prefix,
-- capped length,
-- safe fallback if input reduces to empty.
-
-This prevents malformed paths and keeps naming stable across runs.
-
-## Prerequisites
-
-- An authenticated Azure session before script execution.
-- Outbound access to PowerShell Gallery for module installation.
-- Outbound access to the target storage account endpoint for uploads.
-
-## Run Modes
-
-### Interactive run
+Interactive run:
 
 ```powershell
-pwsh ./ari.ps1
+./ari.ps1
 ```
 
-### Parameterized run
+Parameterized run:
 
 ```powershell
-pwsh ./ari.ps1 -CustomerName contoso -SasToken '?sv=...'
+./ari.ps1 -CustomerName contoso -SasToken '?sv=...'
 ```
 
-### Generate only (no upload)
+Generate only (no upload):
 
 ```powershell
-pwsh ./ari.ps1 -CustomerName contoso -SkipUpload
+./ari.ps1 -CustomerName contoso -SkipUpload
 ```
 
 ## Verification
@@ -147,19 +97,12 @@ pwsh ./ari.ps1 -CustomerName contoso -SkipUpload
 3. If upload is enabled, confirm both uploads complete without HTTP errors.
 4. Confirm local output paths are shown at script completion.
 
-## Troubleshooting
-
-- If upload fails with authorization errors, verify the SAS token is valid and
-  not expired.
-- If module installation fails, check network egress rules and PowerShell
-  Gallery reachability.
-- If no report files are generated, verify ARI module import succeeded and the
-  Azure session context is correct.
-
 ## Operational Notes
 
 - The script is designed to run in Azure CloudShell, Linux, or Windows
   PowerShell.
-- It expects an authenticated Azure session before invocation.
+- It needs an authenticated Azure session before execution.
+- It needs outbound access to PowerShell Gallery and the storage endpoint.
 - It clears prior output content before generating a fresh inventory snapshot.
 - It leaves local file paths visible at the end of execution for traceability.
+- If upload fails, first check SAS validity/expiry and network egress.
