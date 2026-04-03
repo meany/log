@@ -1,6 +1,7 @@
 ---
 name: commit
 description: Review unstaged changes, craft a Conventional Commits message, commit, and push to remote.
+model: model-router (azure)
 ---
 
 Run this workflow in the current repository using non-interactive git commands.
