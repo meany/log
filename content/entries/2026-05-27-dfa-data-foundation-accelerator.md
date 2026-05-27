@@ -8,6 +8,7 @@ tags:
 author: "system"
 slug: "2026-05-27-dfa-data-foundation-accelerator"
 summary: "The Data Foundation Accelerator deploys a minimum viable modern data platform on Azure — Fabric capacity, ADLS Gen2, SQL, Key Vault, and optional API ingestion — via a single Marketplace offer."
+featured_image: "/entries/2026-05-27-dfa-data-foundation-accelerator/og.png"
 ai_note: true
 draft: false
 ---
