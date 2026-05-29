@@ -25,15 +25,13 @@ environments.
 The script entry point is intentionally simple. Run this from Azure CloudShell:
 
 ```powershell
-irm https://data.<domain>.com/ari.ps1 | iex
+irm https://raw.githubusercontent.com/eGroupEnabling/ARI/main/ari.ps1 | iex
 ```
-
-*Note: until this script is live we're using a placeholder domain.*
 
 It can also be downloaded and run locally:
 
 ```powershell
-Invoke-WebRequest -Uri https://data.<domain>.com/ari.ps1 -OutFile ./ari.ps1
+Invoke-WebRequest -Uri https://raw.githubusercontent.com/eGroupEnabling/ARI/main/ari.ps1 -OutFile ./ari.ps1
 ./ari.ps1
 ```
 
@@ -106,3 +104,8 @@ Generate only (no upload):
 - It clears prior output content before generating a fresh inventory snapshot.
 - It leaves local file paths visible at the end of execution for traceability.
 - If upload fails, first check SAS validity/expiry and network egress.
+
+```diff
++ replaced placeholder domain with live URL
++ removed placeholder note from summary
+```
