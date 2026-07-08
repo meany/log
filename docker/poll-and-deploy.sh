@@ -74,7 +74,7 @@ notify_discord() {
 
   local payload
   payload="$(jq -n --arg desc "$description" --argjson color "$color" \
-    '{"embeds":[{"title":"poll-and-deploy","description":$desc,"color":$color}]}')"
+    '{"embeds":[{"title":"meany-log-poll-and-deploy","description":$desc,"color":$color}]}')"
 
   curl -sSf -X POST "$DISCORD_WEBHOOK_URL" \
     -H "Content-Type: application/json" \
