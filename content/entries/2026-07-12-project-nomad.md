@@ -202,3 +202,9 @@ ecosystem.
 
 Huge thanks to [Crosstalk Solutions](https://www.crosstalksolutions.com/) and
 the team for building this project.
+
+```diff
++ Switched chat interface from LM Studio to Jan.ai.
++ Jan.ai provides cleaner remote ollama connectivity via HTTP endpoint config.
+~ Updated system prompt context to reflect Jan.ai chat environment.
+```
