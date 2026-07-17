@@ -49,14 +49,14 @@ an option in the interface to override `nomic-embed-text:v1.5` directly. I'll
 submit a feature request or PR once I get around to it.
 
 Separately, I wanted access to advanced Docker settings in the app editor,
-especially full control of host devices and low-level container config. You can
-absolutely run standalone Ollama with Open WebUI or use LM Studio with other
-components. I tested that path, including Open WebUI's external knowledge source
-flow, and the results were not great for my needs.
+especially full control of host devices and low-level container config. I tested
+standalone Ollama with Open WebUI and LM Studio, but neither had reliable remote
+ollama connectivity that I needed. I switched to Jan.ai, which has solid chat
+features and cleaner remote model integration via HTTP endpoint config.
 
 The main goal was to stay inside the project's ecosystem so native features like
 context links into offline documentation continue to work cleanly. For my setup,
-the out-of-box flow plus LM Studio support ended up being the better path.
+the out-of-box flow plus Jan.ai support ended up being the better path.
 
 ## Docker screenshots
 
@@ -147,7 +147,7 @@ on a safe default path.
 
 ## System prompt
 
-I currently use this full prompt in LM Studio to shape my conversations with
+I currently use this full prompt in Jan.ai to shape my conversations with
 offline data:
 
 ```text
