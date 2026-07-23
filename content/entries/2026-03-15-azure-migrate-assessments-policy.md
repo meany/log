@@ -81,6 +81,8 @@ az policy assignment update --scope "${SCOPE}" \
     "Microsoft.Consumption/budgets",
     "Microsoft.CostManagement/budgets",
     "Microsoft.DataReplication/replicationVaults",
+    "Microsoft.DataReplication/replicationFabrics",
+    "Microsoft.DataReplication/replicationFabrics/*"
     "Microsoft.DependencyMap/*",
     "Microsoft.KeyVault/*",
     "Microsoft.ManagedIdentity/*",
@@ -179,4 +181,5 @@ az consumption budget show --subscription "${SUBSCRIPTION_ID}" --budget-name "${
 
 ```diff
 + readability of az policy assignment update
++ added missing scopes
 ```
