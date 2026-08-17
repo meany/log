@@ -82,24 +82,21 @@ notify_discord() {
     > /dev/null 2>&1 || true
 }
 
-deploy_latest() {
-  runs_url="$API_BASE/repos/$GITHUB_OWNER/$GITHUB_REPO/actions/workflows/$WORKFLOW_FILE/runs?branch=$BRANCH&status=success&per_page=1"
-  run_json="$(api_get "$runs_url")"
+# Deploy a specific run if it is newer than what we are running.
+# Returns:
+#   0 - deployed, or already running this SHA/run (nothing to do)
+#   1 - real failure (API error, download/validation/sync error)
+#   2 - run is not deployable (artifact missing/expired) - try an older run
+deploy_run() {
+  local run_id="$1"
+  local head_sha="$2"
 
-  run_id="$(echo "$run_json" | jq -r '.workflow_runs[0].id // empty')"
-  head_sha="$(echo "$run_json" | jq -r '.workflow_runs[0].head_sha // empty')"
-
-  if [ -z "$run_id" ]; then
-    echo "No successful runs found for workflow=$WORKFLOW_FILE branch=$BRANCH"
-    return 0
-  fi
-
-  last_run_id=""
+  local last_run_id=""
   if [ -f "$LAST_RUN_FILE" ]; then
     last_run_id="$(cat "$LAST_RUN_FILE")"
   fi
 
-  last_sha=""
+  local last_sha=""
   if [ -f "$LAST_SHA_FILE" ]; then
     last_sha="$(cat "$LAST_SHA_FILE")"
   fi
@@ -119,13 +116,14 @@ deploy_latest() {
   fi
 
   artifacts_url="$API_BASE/repos/$GITHUB_OWNER/$GITHUB_REPO/actions/runs/$run_id/artifacts"
-  artifacts_json="$(api_get "$artifacts_url")"
+  artifacts_json="$(api_get "$artifacts_url")" || return 1
 
   download_url="$(echo "$artifacts_json" | jq -r --arg name "$ARTIFACT_NAME" '.artifacts[] | select(.name == $name and (.expired | not)) | .archive_download_url' | head -n1)"
 
   if [ -z "$download_url" ] || [ "$download_url" = "null" ]; then
-    echo "Artifact '$ARTIFACT_NAME' not found (or expired) for run_id=$run_id"
-    return 1
+    # Not a failure: GitHub expired/removed this run's artifact. Skip to an older run.
+    echo "Artifact '$ARTIFACT_NAME' expired or missing for run_id=$run_id; skipping" >&2
+    return 2
   fi
 
   tmp_dir="$WORK_DIR/run-$run_id"
@@ -138,7 +136,7 @@ deploy_latest() {
   echo "Downloading artifact run_id=$run_id sha=$head_sha"
   if ! curl -fsSL \
     -H "Accept: application/vnd.github+json" \
-    -H "Authorization: Bearer $GITHUB_TOKEN" \
+    -H "Authorization: Bearer ***" \
     -L "$download_url" \
     -o "$zip_path"; then
     echo "Artifact download failed for run_id=$run_id (URL may be expired or inaccessible)" >&2
@@ -166,6 +164,42 @@ deploy_latest() {
   echo "$head_sha" > "$LAST_SHA_FILE"
   echo "[DEPLOY] Success. run_id=$run_id sha=$head_sha. Site updated at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   notify_discord success "Deployed \`${run_id}\` (\`${head_sha:0:7}\`) at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+
+deploy_latest() {
+  # Scan recent successful runs (newest first) and deploy the newest one whose
+  # artifact is still downloadable. GitHub deletes artifacts after the retention
+  # window (see build.yml), so the newest successful run may already be
+  # undeployable; falling back to an older run with a live artifact keeps the
+  # site current without failure alerts caused by expired artifacts.
+  local page=1
+  local total_count=""
+
+  while [ "$page" -le 10 ]; do
+    runs_url="$API_BASE/repos/$GITHUB_OWNER/$GITHUB_REPO/actions/workflows/$WORKFLOW_FILE/runs?branch=$BRANCH&status=success&per_page=30&page=$page"
+    runs_json="$(api_get "$runs_url")" || return 1
+    total_count="$(echo "$runs_json" | jq -r '.total_count // 0')"
+
+    local rc=0
+    while read -r run_id head_sha; do
+      [ -z "$run_id" ] && continue
+      deploy_run "$run_id" "$head_sha" || rc=$?
+      if [ "$rc" -eq 0 ]; then
+        return 0
+      fi
+      if [ "$rc" -ne 2 ]; then
+        return "$rc"
+      fi
+    done < <(echo "$runs_json" | jq -r '.workflow_runs[] | "\(.id) \(.head_sha)"')
+
+    if [ "$((page * 30))" -ge "$total_count" ]; then
+      break
+    fi
+    page=$((page + 1))
+  done
+
+  echo "No deployable artifact found in recent successful runs; leaving current site as-is." >&2
+  return 0
 }
 
 while true; do
