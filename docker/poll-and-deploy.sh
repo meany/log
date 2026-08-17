@@ -13,6 +13,14 @@ RUN_ONCE="${RUN_ONCE:-false}"
 DEBUG_API="${DEBUG_API:-false}"
 DISCORD_WEBHOOK_URL="${DISCORD_WEBHOOK_URL:-}"
 
+# Failure-alert hardening: retry transient GitHub API errors with backoff, and
+# rate-limit Discord failure notifications so one transient failure can never
+# spam the channel. A failure is reported at most once per cooldown window.
+API_RETRY_ATTEMPTS="${API_RETRY_ATTEMPTS:-3}"
+API_RETRY_BASE_SLEEP="${API_RETRY_BASE_SLEEP:-10}"
+FAILURE_ALERT_COOLDOWN_SECONDS="${FAILURE_ALERT_COOLDOWN_SECONDS:-3600}"
+FAILURE_BACKOFF_SECONDS="${FAILURE_BACKOFF_SECONDS:-600}"
+
 require_env() {
   local name="$1"
   local value
@@ -36,32 +44,85 @@ fi
 mkdir -p "$STATE_DIR" "$SITE_DIR" "$WORK_DIR"
 LAST_RUN_FILE="$STATE_DIR/last_run_id"
 LAST_SHA_FILE="$STATE_DIR/last_sha"
+LAST_FAILURE_REASON_FILE="$STATE_DIR/last_failure_reason"
+LAST_FAILURE_ALERT_FILE="$STATE_DIR/last_failure_alert"
 # Force a deploy on every container start, regardless of prior state.
 rm -f "$LAST_RUN_FILE"
 # Do not remove last_sha file to persist last deployed SHA
 
+# Record the human-readable reason for the most recent failure so the Discord
+# message can explain WHY the deploy failed (e.g. "GitHub API HTTP 429" vs
+# "artifact download HTTP 401"). Stored in a file because functions that write
+# the reason run inside $(...) subshells where shell variables don't propagate.
+set_failure_reason() {
+  printf '%s' "$1" > "$LAST_FAILURE_REASON_FILE"
+}
+clear_failure_reason() {
+  rm -f "$LAST_FAILURE_REASON_FILE"
+}
+get_failure_reason() {
+  if [ -f "$LAST_FAILURE_REASON_FILE" ]; then
+    cat "$LAST_FAILURE_REASON_FILE"
+  else
+    echo "unknown"
+  fi
+}
+
+# True (0) when a failure alert should be posted now; false (1) when suppressed
+# by the cooldown window. Records the timestamp of the last alert in STATE_DIR so
+# only the FIRST failure in a window notifies Discord.
+should_alert_failure() {
+  [ -z "$DISCORD_WEBHOOK_URL" ] && return 1
+  local now last
+  now="$(date +%s)"
+  if [ -f "$LAST_FAILURE_ALERT_FILE" ]; then
+    last="$(cat "$LAST_FAILURE_ALERT_FILE" 2>/dev/null || echo 0)"
+    if [ "$((now - last))" -lt "$FAILURE_ALERT_COOLDOWN_SECONDS" ]; then
+      return 1
+    fi
+  fi
+  echo "$now" > "$LAST_FAILURE_ALERT_FILE"
+  return 0
+}
 
 api_get() {
   url="$1"
   tmp_body="$WORK_DIR/api-body.json"
+  local attempt=1
+  local backoff="$API_RETRY_BASE_SLEEP"
+  local http_code=""
 
-  http_code="$(curl -sSL -o "$tmp_body" -w "%{http_code}" \
-    -H "Accept: application/vnd.github+json" \
-    -H "Authorization: Bearer $GITHUB_TOKEN" \
-    "$url")"
+  while [ "$attempt" -le "$API_RETRY_ATTEMPTS" ]; do
+    # Guard with `|| true` so a network-level curl failure (exit != 0, code 000)
+    # does not trip `set -e` and kill the whole script into a restart loop.
+    http_code="$(curl -sSL -o "$tmp_body" -w "%{http_code}" \
+      -H "Accept: application/vnd.github+json" \
+      -H "Authorization: Bearer $GITHUB_TOKEN" \
+      "$url" || true)"
 
-  if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
-    echo "GitHub API request failed: status=$http_code url=$url" >&2
+    if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+      cat "$tmp_body"
+      return 0
+    fi
+
+    echo "GitHub API request failed: status=$http_code url=$url (attempt $attempt/$API_RETRY_ATTEMPTS)" >&2
     echo "Expected token permission: actions=read" >&2
 
     if [ "$DEBUG_API" = "true" ] && [ -s "$tmp_body" ]; then
       echo "API response body:" >&2
       cat "$tmp_body" >&2
     fi
-    return 1
-  fi
 
-  cat "$tmp_body"
+    if [ "$attempt" -lt "$API_RETRY_ATTEMPTS" ]; then
+      echo "Retrying in ${backoff}s..." >&2
+      sleep "$backoff"
+      backoff=$((backoff * 2))
+    fi
+    attempt=$((attempt + 1))
+  done
+
+  set_failure_reason "GitHub API HTTP $http_code"
+  return 1
 }
 
 notify_discord() {
@@ -134,28 +195,33 @@ deploy_run() {
   mkdir -p "$tmp_dir" "$out_dir"
 
   echo "Downloading artifact run_id=$run_id sha=$head_sha"
-  if ! curl -fsSL \
+  local dl_code
+  dl_code="$(curl -sSL -o "$zip_path" -w "%{http_code}" \
     -H "Accept: application/vnd.github+json" \
-    -H "Authorization: Bearer ***" \
-    -L "$download_url" \
-    -o "$zip_path"; then
-    echo "Artifact download failed for run_id=$run_id (URL may be expired or inaccessible)" >&2
+    -H "Authorization: Bearer $GITHUB_TOKEN" \
+    -L "$download_url" || true)"
+  if [ "$dl_code" -lt 200 ] || [ "$dl_code" -ge 300 ]; then
+    set_failure_reason "artifact download HTTP $dl_code"
+    echo "Artifact download failed for run_id=$run_id (HTTP $dl_code; URL may be expired or inaccessible)" >&2
     return 1
   fi
 
   if ! unzip -q "$zip_path" -d "$out_dir"; then
+    set_failure_reason "artifact unzip failed"
     echo "Artifact unzip failed for run_id=$run_id" >&2
     return 1
   fi
 
   # Guard against wiping SITE_DIR with an empty or malformed artifact.
   if [ ! -f "$out_dir/index.html" ]; then
+    set_failure_reason "artifact validation failed (missing index.html)"
     echo "Artifact content validation failed for run_id=$run_id (missing index.html)" >&2
     return 1
   fi
 
   # Sync new static output into mounted site directory.
   if ! rsync -a --delete "$out_dir/" "$SITE_DIR/"; then
+    set_failure_reason "site sync (rsync) failed"
     echo "Site sync failed for run_id=$run_id" >&2
     return 1
   fi
@@ -172,6 +238,7 @@ deploy_latest() {
   # window (see build.yml), so the newest successful run may already be
   # undeployable; falling back to an older run with a live artifact keeps the
   # site current without failure alerts caused by expired artifacts.
+  clear_failure_reason
   local page=1
   local total_count=""
 
@@ -202,11 +269,23 @@ deploy_latest() {
   return 0
 }
 
+handle_deploy_failure() {
+  local reason
+  reason="$(get_failure_reason)"
+  echo "Deploy attempt failed: $reason" >&2
+  if should_alert_failure; then
+    notify_discord failure "Deploy failed for \`$GITHUB_OWNER/$GITHUB_REPO\`: $reason at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  else
+    echo "Failure alert suppressed (cooldown ${FAILURE_ALERT_COOLDOWN_SECONDS}s)." >&2
+  fi
+}
+
 while true; do
+  sleep_seconds="$POLL_INTERVAL_SECONDS"
   if [ "$POLLING_ENABLED" = "true" ]; then
     if ! deploy_latest; then
-      echo "Deploy attempt failed; retrying in $POLL_INTERVAL_SECONDS seconds" >&2
-      notify_discord failure "Deploy failed for \`$GITHUB_OWNER/$GITHUB_REPO\` at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+      handle_deploy_failure
+      sleep_seconds="$FAILURE_BACKOFF_SECONDS"
     fi
     STARTUP_CHECK="false"
   fi
@@ -216,5 +295,5 @@ while true; do
     exit 0
   fi
 
-  sleep "$POLL_INTERVAL_SECONDS"
+  sleep "$sleep_seconds"
 done
