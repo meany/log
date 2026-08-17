@@ -46,6 +46,7 @@ LAST_RUN_FILE="$STATE_DIR/last_run_id"
 LAST_SHA_FILE="$STATE_DIR/last_sha"
 LAST_FAILURE_REASON_FILE="$STATE_DIR/last_failure_reason"
 LAST_FAILURE_ALERT_FILE="$STATE_DIR/last_failure_alert"
+LAST_FAILURE_ORIGIN_FILE="$STATE_DIR/last_failure_origin"
 # Force a deploy on every container start, regardless of prior state.
 rm -f "$LAST_RUN_FILE"
 # Do not remove last_sha file to persist last deployed SHA
@@ -65,6 +66,28 @@ get_failure_reason() {
     cat "$LAST_FAILURE_REASON_FILE"
   else
     echo "unknown"
+  fi
+}
+
+# Classify each failure by ORIGIN so the alert policy can tell GitHub-side
+# outages (API rate limits/errors, expired artifacts, network reachability)
+# apart from failures on OUR side of the pipeline. GitHub-origin failures are
+# logged to stderr only; Discord failure alerts are reserved for local failures
+# (unzip, validation, rsync, and auth). Stored in a file alongside the reason
+# for the same subshell-propagation reason.
+set_failure_origin() {
+  printf '%s' "$1" > "$LAST_FAILURE_ORIGIN_FILE"
+}
+clear_failure_origin() {
+  rm -f "$LAST_FAILURE_ORIGIN_FILE"
+}
+get_failure_origin() {
+  if [ -f "$LAST_FAILURE_ORIGIN_FILE" ]; then
+    cat "$LAST_FAILURE_ORIGIN_FILE"
+  else
+    # Default to "local": if an origin was never recorded we must NOT silently
+    # swallow a real failure - alert as if it were ours.
+    echo "local"
   fi
 }
 
@@ -122,6 +145,7 @@ api_get() {
   done
 
   set_failure_reason "GitHub API HTTP $http_code"
+  set_failure_origin "github"
   return 1
 }
 
@@ -202,12 +226,23 @@ deploy_run() {
     -L "$download_url" || true)"
   if [ "$dl_code" -lt 200 ] || [ "$dl_code" -ge 300 ]; then
     set_failure_reason "artifact download HTTP $dl_code"
+    # Classify download failures by origin. HTTP 401 historically means OUR
+    # token was broken (an auth failure on our side, not GitHub being down), so
+    # it is treated as a local failure and still alerts. Every other non-2xx
+    # from the GitHub blob/signed URL (403/410/5xx/000) is GitHub infra or an
+    # expired artifact, so it is logged only.
+    if [ "$dl_code" = "401" ]; then
+      set_failure_origin "local"
+    else
+      set_failure_origin "github"
+    fi
     echo "Artifact download failed for run_id=$run_id (HTTP $dl_code; URL may be expired or inaccessible)" >&2
     return 1
   fi
 
   if ! unzip -q "$zip_path" -d "$out_dir"; then
     set_failure_reason "artifact unzip failed"
+    set_failure_origin "local"
     echo "Artifact unzip failed for run_id=$run_id" >&2
     return 1
   fi
@@ -215,6 +250,7 @@ deploy_run() {
   # Guard against wiping SITE_DIR with an empty or malformed artifact.
   if [ ! -f "$out_dir/index.html" ]; then
     set_failure_reason "artifact validation failed (missing index.html)"
+    set_failure_origin "local"
     echo "Artifact content validation failed for run_id=$run_id (missing index.html)" >&2
     return 1
   fi
@@ -222,6 +258,7 @@ deploy_run() {
   # Sync new static output into mounted site directory.
   if ! rsync -a --delete "$out_dir/" "$SITE_DIR/"; then
     set_failure_reason "site sync (rsync) failed"
+    set_failure_origin "local"
     echo "Site sync failed for run_id=$run_id" >&2
     return 1
   fi
@@ -239,6 +276,7 @@ deploy_latest() {
   # undeployable; falling back to an older run with a live artifact keeps the
   # site current without failure alerts caused by expired artifacts.
   clear_failure_reason
+  clear_failure_origin
   local page=1
   local total_count=""
 
@@ -270,9 +308,17 @@ deploy_latest() {
 }
 
 handle_deploy_failure() {
-  local reason
+  local reason origin
   reason="$(get_failure_reason)"
-  echo "Deploy attempt failed: $reason" >&2
+  origin="$(get_failure_origin)"
+  echo "Deploy attempt failed: $reason (origin=$origin)" >&2
+  if [ "$origin" = "github" ]; then
+    # GitHub-origin failures (API status, network reachability, expired or
+    # inaccessible artifacts) are logged to stderr ONLY. We never alert Discord
+    # for these: a multi-hour GitHub incident must not page the channel.
+    echo "GitHub-origin failure; logging only (no Discord alert)." >&2
+    return 0
+  fi
   if should_alert_failure; then
     notify_discord failure "Deploy failed for \`$GITHUB_OWNER/$GITHUB_REPO\`: $reason at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   else
