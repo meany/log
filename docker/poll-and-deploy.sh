@@ -47,9 +47,8 @@ LAST_SHA_FILE="$STATE_DIR/last_sha"
 LAST_FAILURE_REASON_FILE="$STATE_DIR/last_failure_reason"
 LAST_FAILURE_ALERT_FILE="$STATE_DIR/last_failure_alert"
 LAST_FAILURE_ORIGIN_FILE="$STATE_DIR/last_failure_origin"
-# Force a deploy on every container start, regardless of prior state.
-rm -f "$LAST_RUN_FILE"
-# Do not remove last_sha file to persist last deployed SHA
+# Persist last_run_id and last_sha across restarts so the freshness check in
+# deploy_run() can recognize commits that were already processed and skip them.
 
 # Record the human-readable reason for the most recent failure so the Discord
 # message can explain WHY the deploy failed (e.g. "GitHub API HTTP 429" vs
@@ -186,10 +185,12 @@ deploy_run() {
     last_sha="$(cat "$LAST_SHA_FILE")"
   fi
 
+  # Freshness check: skip (and stay silent) when this run's commit SHA has
+  # already been processed. The comparison is keyed on SHA/run id — never on
+  # timestamps or artifact names — so a re-poll of an unchanged repo is a no-op.
   if [ "$head_sha" = "$last_sha" ]; then
     if [ "$STARTUP_CHECK" = "true" ]; then
       echo "Container started successfully with SHA $head_sha"
-      notify_discord success "Container started successfully with SHA \`${head_sha:0:7}\`"
     else
       echo "No changes detected. Current SHA $head_sha"
     fi
@@ -263,10 +264,14 @@ deploy_run() {
     return 1
   fi
 
-  echo "$run_id" > "$LAST_RUN_FILE"
-  echo "$head_sha" > "$LAST_SHA_FILE"
   echo "[DEPLOY] Success. run_id=$run_id sha=$head_sha. Site updated at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   notify_discord success "Deployed \`${run_id}\` (\`${head_sha:0:7}\`) at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+  # Persist the last-processed run id and SHA only AFTER a successful
+  # notification, so a notification that fails (or is suppressed) is retried on
+  # the next poll instead of being silently marked as seen.
+  echo "$run_id" > "$LAST_RUN_FILE"
+  echo "$head_sha" > "$LAST_SHA_FILE"
 }
 
 deploy_latest() {
@@ -288,6 +293,12 @@ deploy_latest() {
     local rc=0
     while read -r run_id head_sha; do
       [ -z "$run_id" ] && continue
+      # Always capture deploy_run's exit code (reset rc first, then capture on
+      # failure via `||`). The old `deploy_run ... || rc=$?` left rc stuck at its
+      # previous value after a *successful* deploy, so a prior rc=2 (expired
+      # artifact) made the loop keep walking into older, already-seen runs and
+      # re-deploy them — the source of repeated "Deployed" messages.
+      rc=0
       deploy_run "$run_id" "$head_sha" || rc=$?
       if [ "$rc" -eq 0 ]; then
         return 0
