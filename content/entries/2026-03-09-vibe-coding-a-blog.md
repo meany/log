@@ -29,11 +29,11 @@ npm run dev
 
 ## Context Notes
 
-The log stays static-first: content in Git, HTML as artifact, Docker runtime polling
-for fresh build output.
+The log stays static-first: content in Git, HTML as artifact, Docker serving
+the bundled build output.
 
 ```yaml
-deploy_model: pull-and-serve
+deploy_model: build-publish-manual-redeploy
 generator: 11ty
 source_of_truth: git
 ```

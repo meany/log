@@ -1,30 +1,38 @@
-## Local Poll Script Testing
+## Local Docker Build
 
-Use this when troubleshooting poll-agent behavior (for example `403` when reading
-GitHub Actions artifacts).
-
-### `docker/.env` Values
-
-See the [Environment File](../docs/DEPLOY.md#environment-file-env) section in DEPLOY.md. For local testing, `RUN_ONCE=true` and `DEBUG_API=true` are useful additions.
-
-### Run Poll Script Once (Local)
+Build the image locally to verify the container serves the static site:
 
 ```bash
-docker compose -f docker/docker-compose.prod.yml run --rm \
-  -e RUN_ONCE=true \
-  -e DEBUG_API=true \
-  log-site /app/poll-and-deploy.sh
+docker compose -f docker/docker-compose.local.yml build
 ```
 
-### View Poll-Agent Logs
-
-`poll-agent` output is now wired to container stdout/stderr via supervisord, so
-you can inspect script `echo` output with:
+Run it:
 
 ```bash
-docker compose -f docker/docker-compose.prod.yml logs -f log-site
+docker compose -f docker/docker-compose.local.yml up -d
 ```
 
-### Required Token Permission
+Check it is serving:
 
-See [GitHub Token Setup](../docs/DEPLOY.md#github-token-setup) in DEPLOY.md.
+```bash
+curl http://localhost:8069/
+curl http://localhost:8069/feed.xml
+```
+
+View logs:
+
+```bash
+docker compose -f docker/docker-compose.local.yml logs -f log-site
+```
+
+Stop it:
+
+```bash
+docker compose -f docker/docker-compose.local.yml down
+```
+
+## Notes
+
+The image runs nginx directly (`nginx -g "daemon off;"`) — there is no
+supervisord and no background poll process. nginx serves the `_site` build that
+was copied into the image at build time.

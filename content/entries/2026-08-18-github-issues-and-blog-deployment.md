@@ -36,7 +36,7 @@ None of this is news if you've used GitHub recently. The question is: what do yo
 
 ## The deployment response
 
-Over the past 48 hours, I made three sequential fixes to my blog's polling-and-deployment script. Each one started from a different GitHub failure mode, and together they show how to build something that actually works when your infrastructure vendor is struggling.
+Over the past 48 hours I made three sequential fixes to my blog's polling-and-deployment script. Each one started from a different GitHub failure mode. Together they showed me the real problem wasn't any single bug — it was the mechanism.
 
 ### Fix 1: Assume artifacts expire silently
 
@@ -56,12 +56,7 @@ After Fix 1, the script still failed on every poll for 48 hours but with a criti
 
 Beyond that specific bug, the broader issue: transient GitHub API failures would crash the script → supervisor restart → restart the poll loop → fail again → spam Discord.
 
-**Fix:**
-- Retry API calls with exponential backoff (3 attempts)
-- Capture HTTP status at every failure point (API status, artifact download, unzip validation, rsync)
-- Rate-limit Discord alerts: only the first failure per hour gets a message
-- Back off the poll interval after failure (poll every 2min when healthy, every 10min after failure)
-- Guard curl calls so network failures don't trigger set -e into a supervisor restart
+**Fix:** Retry API calls with exponential backoff, capture HTTP status at every failure point, rate-limit Discord alerts, and back off the poll interval after failure.
 
 **Lesson:** Your alerts must be as reliable as your deployment. If you alert on every transient failure, you've just built a spam machine.
 
@@ -71,25 +66,29 @@ Beyond that specific bug, the broader issue: transient GitHub API failures would
 
 Now the hard one: GitHub itself was having an infrastructure incident (no public acknowledgment, but API stability was degraded). Every poll returned a 500 or connection failure. Discord was lighting up with "Deploy failed" messages every 10 minutes.
 
-But here's the thing: it's not a failure I can fix. GitHub is down, artifacts are inaccessible, there's nothing to do. Alerting the channel every 10 minutes doesn't speed up GitHub's recovery—it just adds noise.
-
-**Fix:** Classify failures by origin:
-- **GitHub-origin failures** (API 5xx, network timeouts, artifact download 403/410, etc.) → log to stderr, do not alert Discord
-- **Local failures** (unzip corruption, validation failure, rsync error) → alert to Discord with the reason
-- **Auth failures** (401 on artifact download) → treat as local (our token, our responsibility)
-
-The logic: a multi-hour GitHub incident must not page the ops channel. But a deployment validation failure should.
+**Fix:** Classify failures by origin. GitHub-origin failures (API 5xx, network timeouts, expired artifacts) get logged but never alert Discord; only genuine local failures page the channel.
 
 **Lesson:** Not every failure is equal. Infrastructure failures are someone else's problem; operational failures are yours.
 
+### Fix 4: Delete the mechanism
+
+Three fixes in, the alerts still fired. Each patch treated a symptom, but the structure was the disease: a background process polling GitHub every two minutes and pinging Discord on every hiccup is inherently noisy. A poller whose only job is to notice changes I already know about — I pushed the commit — is automation for its own sake.
+
+So I removed it. The poll script, its tests, the supervisord entry, the Discord webhook — all gone. What remains is the part that was never broken:
+
+- Content pushes still build the site and publish a container image (`ghcr.io/meany/log:latest`).
+- Deploying is one manual command on the host: `docker compose up -d --pull always`.
+
+No auto-poll, no auto-pull, no deploy notification. A deploy happens when I decide it happens.
+
 ## What this means
 
-Three small commits, but they represent a philosophy:
+Three commits to harden the script, one to delete it. The philosophy didn't change — it sharpened:
+
 - **Assume your platform will fail.** Don't wait until it's graceful; design for it now.
-- **Make failures legible.** You need to know what kind of failure you're looking at and who owns it.
-- **Don't amplify transient noise.** Rate-limit alerts, back off, and be precise about signal vs. noise.
-- **Own your resilience.** If GitHub goes down and my blog goes down too, that's acceptable. But my ops channel shouldn't melt down.
+- **Don't automate what you don't need to notice.** A background poller detects change; when the change is triggered by your own push, the push *is* the notification.
+- **Simpler survives.** The build-and-publish pipeline was never the fragile part; the polling glue on top of it was.
 
 GitHub is a critical infrastructure dependency for 100M developers. It's not going anywhere. But the comfort of "GitHub will always be up" is gone, and it's not coming back. The commit volume and AI-generated code are structural—not a bug, but a feature of how software development works now.
 
-The question isn't "how do we fix GitHub?" (that's Microsoft's job). The question is "how do I build something that doesn't break when GitHub is having a bad day?" And the answer is three commits old.
+The question isn't "how do we fix GitHub?" (that's Microsoft's job). The question is "how do I build something that doesn't break when GitHub is having a bad day?" And the answer turned out to be: build the artifact, publish the image, and pull it manually when you're good and ready.

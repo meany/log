@@ -16,7 +16,7 @@ A minimalist static engineering log built with 11ty, Markdown, and Docker. Git i
 
 - `content/entries/` — Log entries in Markdown + YAML frontmatter
 - `css/` — Single stylesheet with terminal aesthetic
-- `docker/` — Container runtime (nginx + poll-agent)
+- `docker/` — Container runtime (nginx)
 - `docs/` — Deployment and development documentation
 - `.github/` — Build automation and instructions
 
@@ -43,7 +43,7 @@ See [.github/instructions/markdown.instructions.md](.github/instructions/markdow
 
 ## Deployment
 
-GitHub Actions builds on `main` push; poll-agent pulls artifacts to production. See [docs/DEPLOY.md](docs/DEPLOY.md) and [docs/DOCKER.md](docs/DOCKER.md) for details and architectural model.
+GitHub Actions builds the site and publishes a container image on `main` push. Updates reach production by manually pulling the new image on the host (`docker compose up -d --pull always`). See [docs/DEPLOY.md](docs/DEPLOY.md) and [docs/DOCKER.md](docs/DOCKER.md) for details.
 
 ## Design principles
 

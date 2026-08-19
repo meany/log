@@ -14,7 +14,7 @@
 - Styling: single CSS file (readability-first)
 - Feed: Atom enabled
 - Listing: single reverse-chron index for now; revisit pagination after ~25 entries
-- Deploy model: GitHub Actions build -> deploy artifacts -> server-side pull via timer
+- Deploy model: GitHub Actions build -> publish container image -> manual redeploy on host
 - Metadata pattern: keep stable site values in `_data/site.js`; generate footer build values in `.eleventy.js` (`footerParent` from URL depth, `footer.size`/`footer.date` from final `_site` output)
 
 ## Quality Standards
